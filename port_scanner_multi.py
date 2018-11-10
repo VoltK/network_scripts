@@ -70,9 +70,12 @@ def check_port(port, url):
 
 
 def get_mac(ip):
-    pid = Popen(["arp", "-n", ip], stdout=PIPE)
-    s = pid.communicate()[0]
-    mac = re.search(r"(([a-f\d]{1,2}\:){5}[a-f\d]{1,2})", str(s)).groups()[0]
+    try:
+        pid = Popen(["arp", "-n", ip], stdout=PIPE)
+        s = pid.communicate()[0]
+        mac = re.search(r"(([a-f\d]{1,2}\:){5}[a-f\d]{1,2})", str(s)).groups()[0]
+    except:
+        mac = ""
     return mac
 
 
@@ -105,7 +108,9 @@ def main():
     final_time = end - start
 
     print(f"Total open ports: {total}")
-    print(f"MAC ADDRESS: {mac}")
+
+    if mac != "":
+        print(f"MAC ADDRESS: {mac}")
 
     print("Completed scan in " + str(final_time))
 
