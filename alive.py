@@ -54,7 +54,7 @@ def check_output(output):
 def who_is_alive(scanner, output):
 
     total = 0
-    with open(output, 'a') as file:
+    with open(output, 'w+') as file:
         for host in scanner.all_hosts():
             if scanner[host].state() == "up":
                 total += 1
