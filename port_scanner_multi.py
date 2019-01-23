@@ -11,7 +11,8 @@ def check_args():
     parse = argparse.ArgumentParser()
 
     parse.add_argument('-p', '--port', nargs='*', help='enter ports to scan: -p 21 80 443 8080')
-    parse.add_argument('-t', '--target', help='enter your target in format: -t targetsite.com')
+    parse.add_argument('-t', '--target', nargs="*", help='enter your target/targets in format: -t targetsite.com')
+    parse.add_argument('-f', '--file', help='enter your file with targets in format: -f file.txt')
 
     args_list = parse.parse_args()
 
@@ -32,18 +33,18 @@ def get_port(port_list):
     return ports
 
 
-def get_url(target):
+def get_target(target):
     try:
         if target:
-            print(f"Target: {target}")
-            url = socket.gethostbyname(target)
+            print("-" * 100 + f"\nTarget: {target}")
+            host = socket.gethostbyname(target)
         else:
-            url = socket.gethostbyname(input("Enter your target: "))
+            host = socket.gethostbyname(input("Enter your target: "))
     except socket.gaierror:
         print("Wrong address")
         sys.exit()
 
-    return url
+    return host
 
 
 def check_port(port, url):
@@ -82,37 +83,44 @@ def get_mac(ip):
 def main():
     c_args = check_args()
 
-    url = get_url(c_args.target)
-    ports = get_port(c_args.port)
-    mac = get_mac(url)
+    if c_args.file is not None:
+        with open(c_args.file, 'r') as file:
+            targets = file.readlines()
+    else:
+        targets = c_args.target
 
-    print('.' * 100)
-    print('Start scanning %s for open ports' % url)
-    print('.' * 100)
+    for target in targets:
+        target = get_target(target.strip())
+        ports = get_port(c_args.port)
+        mac = get_mac(target)
 
-    start = datetime.now()
+        print('.' * 100)
+        print('Start scanning %s for open ports' % target)
+        print('.' * 100)
 
-    with Pool(50) as pool:
-        results = pool.map(partial(check_port, url=url), ports)
+        start = datetime.now()
 
-        total = 0
+        with Pool(50) as pool:
+            results = pool.map(partial(check_port, url=target), ports)
 
-        for elem in results:
-            if elem != None:
-                total += 1
-                for port, message in elem.items():
-                    print(f"[+] Open port: {port}\nReceived message: {message}\n")
+            total = 0
 
-    end = datetime.now()
+            for elem in results:
+                if elem != None:
+                    total += 1
+                    for port, message in elem.items():
+                        print(f"[+] Open port: {port}\nReceived message: {message}\n")
 
-    final_time = end - start
+        end = datetime.now()
 
-    print(f"Total open ports: {total}")
+        final_time = end - start
 
-    if mac != "":
-        print(f"MAC ADDRESS: {mac}")
+        print(f"Total open ports: {total}")
 
-    print("Completed scan in " + str(final_time))
+        if mac != "":
+            print(f"MAC ADDRESS: {mac}")
+
+        print("Completed scan in " + str(final_time))
 
 
 if __name__ == '__main__':
